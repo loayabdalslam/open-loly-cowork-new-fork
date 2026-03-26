@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">Open Claude Cowork</h1>
+  <h1 align="center">Open Loly Cowork</h1>
 </p>
 
 <p align="center">
@@ -51,7 +51,7 @@
 
 This repo includes two powerful AI tools:
 
-| | **Open Claude Cowork** | 🦑 **Secure Clawdbot** |
+| | **Open Loly Cowork** | 🦑 **Secure Clawdbot** |
 |---|---|---|
 | **What** | Full-featured desktop chat interface | Personal AI assistant on messaging |
 | **Where** | macOS, Windows, Linux | WhatsApp, Telegram, Signal, iMessage |
@@ -63,7 +63,7 @@ Both include **500+ app integrations** via Composio (Gmail, Slack, GitHub, Googl
 
 ## Quick Start
 
-### Open Claude Cowork
+### Open Loly Cowork
 
 ```bash
 git clone https://github.com/ComposioHQ/open-claude-cowork.git
@@ -96,7 +96,7 @@ See [Secure Clawdbot Documentation](./clawd/README.md) for full setup.
 
 ## Features
 
-### Open Claude Cowork
+### Open Loly Cowork
 - **Multi-Provider Support** - Claude Agent SDK or Opencode for different models
 - **Persistent Sessions** - Context maintained across messages
 - **Real-time Streaming** - Token-by-token response display
@@ -218,7 +218,7 @@ open-claude-cowork/
 </p>
 
 <p align="center">
-  <a href="https://platform.composio.dev/?utm_source=github&utm_medium=community&utm_campaign=2101&utm_content=open claude cowork">
+  <a href="https://platform.composio.dev/?utm_source=github&utm_medium=community&utm_campaign=2101&utm_content=Open Loly Cowork">
     <img src="https://img.shields.io/badge/Get_Started_For_Free-4F46E5?style=for-the-badge" alt="Get Started For Free"/>
   </a>
 </p>

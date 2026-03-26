@@ -30,6 +30,24 @@ const leftSidebar = document.getElementById('leftSidebar');
 const leftSidebarToggle = document.getElementById('leftSidebarToggle');
 const leftSidebarExpand = document.getElementById('leftSidebarExpand');
 
+// DOM Elements - Settings Modal
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsModal = document.getElementById('settingsModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const settingsNavItems = document.querySelectorAll('.settings-nav-item');
+const tabPanes = document.querySelectorAll('.tab-pane');
+
+// Settings Inputs
+const anthropicKeyInput = document.getElementById('anthropicKeyInput');
+const opencodeKeyInput = document.getElementById('opencodeKeyInput');
+const defaultProviderSelect = document.getElementById('defaultProviderSelect');
+const saveGeneralBtn = document.getElementById('saveGeneralBtn');
+const saveProvidersBtn = document.getElementById('saveProvidersBtn');
+const themeCards = document.querySelectorAll('.theme-card');
+const composioOnboardingBtn = document.getElementById('composioOnboardingBtn');
+const statusIndicator = document.getElementById('statusIndicator');
+const statusText = document.getElementById('statusText');
+
 // State
 let isFirstMessage = true;
 let todos = [];
@@ -70,8 +88,11 @@ const providerModels = {
 
 // Initialize
 function init() {
+  loadSettings();
   updateGreeting();
   setupEventListeners();
+  setupSettingsEventListeners();
+  setupWindowControls(); // Add this
   loadAllChats();
   renderChatHistory();
   homeInput.focus();
@@ -1762,3 +1783,187 @@ function handleBrowserTransitionOnMessage() {
 
 // Initialize on load
 window.addEventListener('load', init);
+// ==================== SETTINGS LOGIC ====================
+
+function setupSettingsEventListeners() {
+  // Toggle Modal
+  settingsBtn.addEventListener('click', () => {
+    settingsModal.classList.remove('hidden');
+    checkComposioStatus();
+  });
+
+  closeModalBtn.addEventListener('click', () => {
+    settingsModal.classList.add('hidden');
+  });
+
+  settingsModal.addEventListener('click', (e) => {
+    if (e.target === settingsModal) {
+      settingsModal.classList.add('hidden');
+    }
+  });
+
+  // Tab Navigation
+  settingsNavItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const tabId = item.dataset.tab;
+      
+      settingsNavItems.forEach(nav => nav.classList.toggle('active', nav === item));
+      tabPanes.forEach(pane => pane.classList.toggle('active', pane.id === tabId));
+      
+      // Update header title
+      const title = item.textContent.trim();
+      document.getElementById('settingsTabTitle').textContent = title;
+    });
+  });
+
+  // Save General Settings
+  saveGeneralBtn.addEventListener('click', () => {
+    const defaultProvider = defaultProviderSelect.value;
+    localStorage.setItem('defaultProvider', defaultProvider);
+    
+    // Also apply to current if not in chat
+    if (isFirstMessage) {
+      selectedProvider = defaultProvider;
+      updateProviderUI(defaultProvider);
+    }
+    
+    showNotification('Settings saved!');
+  });
+
+  // Save Providers Settings
+  const saveApiKeysBtn = document.getElementById('saveApiKeysBtn'); // Fix ID
+  saveApiKeysBtn.addEventListener('click', () => {
+    const anthropicKey = document.getElementById('anthropicApiKeyInput').value.trim(); // Fix IDs
+    const opencodeKey = document.getElementById('opencodeApiKeyInput').value.trim();
+    
+    if (anthropicKey) localStorage.setItem('ANTHROPIC_API_KEY', anthropicKey);
+    if (opencodeKey) localStorage.setItem('OPENCODE_API_KEY', opencodeKey);
+    
+    showNotification('API keys saved!');
+  });
+
+  // Theme Toggling
+  themeCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const theme = card.dataset.theme;
+      applyTheme(theme);
+      
+      themeCards.forEach(c => c.classList.toggle('active', c === card));
+      localStorage.setItem('selectedTheme', theme);
+    });
+  });
+
+  // Composio Onboarding
+  const saveComposioBtn = document.getElementById('saveComposioBtn');
+  saveComposioBtn.addEventListener('click', () => {
+    const composioKey = document.getElementById('composioApiKeyInput').value.trim();
+    if (composioKey) localStorage.setItem('COMPOSIO_API_KEY', composioKey);
+    showNotification('Composio key saved!');
+    checkComposioStatus();
+  });
+}
+
+function setupWindowControls() {
+  document.getElementById('minBtn').addEventListener('click', () => {
+    window.electronAPI.minimize();
+  });
+
+  document.getElementById('maxBtn').addEventListener('click', () => {
+    window.electronAPI.maximize();
+  });
+
+  document.getElementById('closeBtn').addEventListener('click', () => {
+    window.electronAPI.close();
+  });
+}
+
+function applyTheme(themeName) {
+  // Remove all theme classes from body
+  const themeClasses = Array.from(document.body.classList).filter(c => c.startsWith('theme-'));
+  document.body.classList.remove(...themeClasses);
+  
+  if (themeName !== 'default') {
+    document.body.classList.add(`theme-${themeName}`);
+  }
+}
+
+function loadSettings() {
+  // Load API Keys
+  const anthropicKey = localStorage.getItem('ANTHROPIC_API_KEY');
+  const opencodeKey = localStorage.getItem('OPENCODE_API_KEY');
+  const composioKey = localStorage.getItem('COMPOSIO_API_KEY');
+  
+  if (anthropicKey) document.getElementById('anthropicApiKeyInput').value = anthropicKey;
+  if (opencodeKey) document.getElementById('opencodeApiKeyInput').value = opencodeKey;
+  if (composioKey) document.getElementById('composioApiKeyInput').value = composioKey;
+  
+  // Load Default Provider
+  const defaultProvider = localStorage.getItem('defaultProvider') || 'claude';
+  defaultProviderSelect.value = defaultProvider;
+  
+  // Apply Theme
+  const savedTheme = localStorage.getItem('selectedTheme') || 'default';
+  applyTheme(savedTheme);
+  
+  // Set active theme card
+  themeCards.forEach(card => {
+    card.classList.toggle('active', card.dataset.theme === savedTheme);
+  });
+}
+
+async function checkComposioStatus() {
+  statusIndicator.className = 'status-indicator checking';
+  statusText.textContent = 'Checking connection...';
+  
+  try {
+    const isConnected = await window.electronAPI.checkComposioConnection();
+    if (isConnected) {
+      statusIndicator.className = 'status-indicator connected';
+      statusText.textContent = 'Connected to Composio Cloud';
+    } else {
+      statusIndicator.className = 'status-indicator error';
+      statusText.textContent = 'Not connected';
+    }
+  } catch (err) {
+    statusIndicator.className = 'status-indicator error';
+    statusText.textContent = 'Connection error';
+  }
+}
+
+function showNotification(message) {
+  // Simple notification if we had an element, otherwise alert
+  const toast = document.createElement('div');
+  toast.className = 'toast-notification';
+  toast.textContent = message;
+  toast.style.position = 'fixed';
+  toast.style.bottom = '20px';
+  toast.style.right = '20px';
+  toast.style.background = 'var(--accent-primary)';
+  toast.style.color = 'white';
+  toast.style.padding = '12px 24px';
+  toast.style.borderRadius = '8px';
+  toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+  toast.style.zIndex = '3000';
+  toast.style.animation = 'fadeInUp 0.3s ease-out';
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.animation = 'fadeOutDown 0.3s ease-in';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Add fadeInUp/Down animations to style if not present
+const styleSheet = document.createElement("style");
+styleSheet.innerText = `
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOutDown {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(20px); }
+}
+`;
+document.head.appendChild(styleSheet);

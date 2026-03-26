@@ -71,10 +71,9 @@ export async function clearProviderCache() {
 export async function initializeProviders() {
   console.log('[Providers] Initializing providers...');
   try {
-    // Get and initialize opencode provider
-    const opencodeProvider = getProvider('opencode');
-    await opencodeProvider.initialize();
-    console.log('[Providers] Opencode provider initialized');
+    // We no longer eagerly initialize opencode on startup to avoid ENOENT errors
+    // if the command is missing. Providers will initialize on their first query call.
+    console.log('[Providers] Ready (lazy initialization enabled)');
   } catch (error) {
     console.error('[Providers] Error initializing providers:', error.message);
   }

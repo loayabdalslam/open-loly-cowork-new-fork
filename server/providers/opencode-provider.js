@@ -1,3 +1,5 @@
+import { join } from 'path';
+import { spawn } from 'child_process';
 import { createOpencode, createOpencodeClient } from '@opencode-ai/sdk';
 import { BaseProvider } from './base-provider.js';
 
@@ -45,24 +47,64 @@ export class OpencodeProvider extends BaseProvider {
 
     try {
       if (this.useExistingServer && this.existingServerUrl) {
-        // Connect to existing Opencode server
         console.log('[Opencode] Connecting to existing server:', this.existingServerUrl);
         this.client = createOpencodeClient({
           baseUrl: this.existingServerUrl
         });
       } else {
         // Create new Opencode server and client
-        console.log('[Opencode] Creating new server on', this.hostname, ':', this.port);
-        const { client, server } = await createOpencode({
-          hostname: this.hostname,
-          port: this.port
-        });
-        this.client = client;
-        this.serverInstance = server;
+        
+        // On Windows, ensure the npm global path is in the PATH
+        if (process.platform === 'win32' && process.env.APPDATA) {
+          const npmPath = join(process.env.APPDATA, 'npm');
+          if (!process.env.PATH.includes(npmPath)) {
+            console.log('[Opencode] Adding npm global path to search PATH:', npmPath);
+            process.env.PATH = `${npmPath};${process.env.PATH}`;
+          }
+        }
+
+        console.log('[Opencode] Attempting to start server on', this.hostname, ':', this.port);
+        
+        // Manual spawn logic for Windows compatibility
+        if (process.platform === 'win32') {
+          console.log('[Opencode] Using Windows-specific manual spawn...');
+          const opencodeProcess = spawn('opencode', ['serve', `--hostname=${this.hostname}`, `--port=${this.port}`], {
+            shell: true,
+            stdio: 'inherit'
+          });
+
+          this.serverInstance = {
+            close: () => opencodeProcess.kill()
+          };
+          
+          // Wait a bit for server to start
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          
+          this.client = createOpencodeClient({
+            baseUrl: `http://${this.hostname}:${this.port}`
+          });
+        } else {
+          // Normal SDK initialization for other platforms
+          try {
+            const { client, server } = await createOpencode({
+              hostname: this.hostname,
+              port: this.port
+            });
+            this.client = client;
+            this.serverInstance = server;
+          } catch (spawnError) {
+            if (spawnError.code === 'ENOENT') {
+              const msg = 'Opencode CLI not found. Please install it with "npm install -g opencode-ai" or check your PATH.';
+              console.error('[Opencode] ' + msg);
+              throw new Error(msg);
+            }
+            throw spawnError;
+          }
+        }
       }
       console.log('[Opencode] Initialized successfully');
     } catch (error) {
-      console.error('[Opencode] Initialization error:', error);
+      console.error('[Opencode] Initialization error:', error.message);
       throw error;
     }
   }

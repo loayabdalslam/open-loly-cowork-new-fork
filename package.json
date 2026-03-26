@@ -11,7 +11,10 @@
   "license": "ISC",
   "description": "Electron chat app with Claude Agent SDK and Opencode SDK support",
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.7",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.84",
+    "@composio/claude-agent-sdk": "^0.6.7",
+    "@composio/core": "^0.6.7",
+    "@graphql-mesh/compose-cli": "^1.5.24",
     "@opencode-ai/sdk": "latest",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

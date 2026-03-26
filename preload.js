@@ -114,5 +114,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       console.error('[PRELOAD] Error fetching providers:', error);
       return { providers: ['claude'], default: 'claude' };
     }
-  }
+  },
+
+  // Composio methods
+  launchComposioOnboarding: () => ipcRenderer.invoke('composio:launch-onboarding'),
+  checkComposioConnection: () => ipcRenderer.invoke('composio:check-connection'),
+    
+  // Window controls
+  minimize: () => ipcRenderer.send('window-minimize'),
+  maximize: () => ipcRenderer.send('window-maximize'),
+  close: () => ipcRenderer.send('window-close'),
 });

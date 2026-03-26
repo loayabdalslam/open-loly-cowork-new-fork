@@ -5,6 +5,8 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import { Composio } from '@composio/core';
+import { ClaudeAgentSDKProvider } from '@composio/claude-agent-sdk';
+import { createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
 import { getProvider, getAvailableProviders, initializeProviders } from './providers/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,7 +18,10 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Initialize Composio
-const composio = new Composio();
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new ClaudeAgentSDKProvider(),
+});
 
 const composioSessions = new Map();
 let defaultComposioSession = null;
@@ -28,11 +33,13 @@ async function initializeComposioSession() {
   try {
     defaultComposioSession = await composio.create(defaultUserId);
     composioSessions.set(defaultUserId, defaultComposioSession);
-    console.log('[COMPOSIO] Session ready with MCP URL:', defaultComposioSession.mcp.url);
+    console.log('[COMPOSIO] Session ready');
 
-    // Update opencode.json with the MCP config
-    updateOpencodeConfig(defaultComposioSession.mcp.url, defaultComposioSession.mcp.headers);
-    console.log('[OPENCODE] Updated opencode.json with MCP config');
+    // Update opencode.json with the MCP config if available
+    if (defaultComposioSession.mcp) {
+      updateOpencodeConfig(defaultComposioSession.mcp.url, defaultComposioSession.mcp.headers);
+      console.log('[OPENCODE] Updated opencode.json with MCP config');
+    }
   } catch (error) {
     console.error('[COMPOSIO] Failed to pre-initialize session:', error.message);
   }
@@ -110,23 +117,31 @@ app.post('/api/chat', async (req, res) => {
       res.write(`data: ${JSON.stringify({ type: 'status', message: 'Initializing session...' })}\n\n`);
       composioSession = await composio.create(userId);
       composioSessions.set(userId, composioSession);
-      console.log('[COMPOSIO] Session created with MCP URL:', composioSession.mcp.url);
+      console.log('[COMPOSIO] Session created');
 
-      // Update opencode.json with the MCP config
-      updateOpencodeConfig(composioSession.mcp.url, composioSession.mcp.headers);
-      console.log('[OPENCODE] Updated opencode.json with MCP config');
+      // Update opencode.json with the MCP config if available
+      if (composioSession.mcp) {
+        updateOpencodeConfig(composioSession.mcp.url, composioSession.mcp.headers);
+        console.log('[OPENCODE] Updated opencode.json with MCP config');
+      }
     }
+
+    // Get tools from the session
+    const tools = await composioSession.tools();
+
+    // Create a local MCP server for Composio tools
+    const composioServer = createSdkMcpServer({
+      name: "composio",
+      version: "1.0.0",
+      tools: tools,
+    });
 
     // Get the provider instance
     const provider = getProvider(providerName);
 
     // Build MCP servers config - passed to provider
     const mcpServers = {
-      composio: {
-        type: 'http',
-        url: composioSession.mcp.url,
-        headers: composioSession.mcp.headers
-      }
+      composio: composioServer
     };
 
     console.log('[CHAT] Using provider:', provider.name);

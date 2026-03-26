@@ -1,10 +1,11 @@
 {
+  "$schema": "https://opencode.ai/config.json",
   "mcp": {
     "composio": {
       "type": "remote",
-      "url": "https://backend.composio.dev/tool_router/trs_LyMgB14Q8frA/mcp",
+      "url": "https://backend.composio.dev/tool_router/trs_qcw5NYFJjGXu/mcp",
       "headers": {
-        "x-api-key": "ak_IrNotiz279_Is0PjbFMm"
+        "x-api-key": "ak_-HeJO8SR4-u4pszmdZFo"
       }
     }
   }

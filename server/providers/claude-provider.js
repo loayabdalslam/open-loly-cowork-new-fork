@@ -1,4 +1,4 @@
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { query, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
 import { BaseProvider } from './base-provider.js';
 
 /**

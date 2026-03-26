@@ -1,46 +1,34 @@
 #!/bin/bash
 
-# Open Claude Cowork Setup Script
+# Open Loly Cowork Setup Script
 # This script helps you get started with Composio and configure the project
 
 set -e
 
-echo "Open Claude Cowork Setup"
+echo "Open Loly Cowork Setup"
 echo "================================"
 echo ""
 
-# Check if Composio CLI is installed
-if ! command -v composio &> /dev/null; then
-    echo "Composio CLI not found. Installing..."
-    echo ""
-    curl -fsSL https://composio.dev/install | bash
-    echo ""
-    echo "Composio CLI installed successfully!"
-    echo ""
-    # Source the shell config to make composio available immediately
-    if [ -f "$HOME/.bashrc" ]; then
-        source "$HOME/.bashrc"
-    elif [ -f "$HOME/.zshrc" ]; then
-        source "$HOME/.zshrc"
-    fi
-else
-    echo "Composio CLI already installed"
-    echo ""
-fi
 
-# Check if user is already logged in
-if composio whoami &> /dev/null; then
-    echo "Already logged in to Composio"
+
+
+# Check if Opencode CLI is installed and working
+if ! command -v opencode &> /dev/null; then
+    echo "Opencode CLI not found. Attempting to install it globally..."
+    npm install -g opencode-ai
     echo ""
 else
-    echo "Please log in to Composio (or sign up if you don't have an account)"
-    echo "This will open your browser to complete authentication"
-    echo ""
-    read -p "Press Enter to continue..."
-    composio login
-    echo ""
-    echo "Successfully authenticated with Composio!"
-    echo ""
+    # Try running the command to ensure it's not broken (like the MODULE_NOT_FOUND error)
+    if ! opencode --version &> /dev/null; then
+        echo "Opencode CLI seems to be installed but is broken (path issue)."
+        echo "Attempting to fix by reinstalling..."
+        npm uninstall -g opencode-ai
+        npm install -g opencode-ai
+        echo ""
+    else
+        echo "Opencode CLI is installed and working correctly."
+        echo ""
+    fi
 fi
 
 # Create .env file if it doesn't exist
@@ -54,48 +42,14 @@ else
     echo ""
 fi
 
-# Prompt for Anthropic API key
-echo "API Key Configuration"
-echo "------------------------"
-echo ""
-echo "You'll need an Anthropic API key from: https://console.anthropic.com"
-echo ""
-read -p "Enter your Anthropic API key (or press Enter to skip): " anthropic_key
 
-if [ ! -z "$anthropic_key" ]; then
-    # Update .env file with Anthropic key
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s/ANTHROPIC_API_KEY=.*/ANTHROPIC_API_KEY=$anthropic_key/" .env
-    else
-        sed -i "s/ANTHROPIC_API_KEY=.*/ANTHROPIC_API_KEY=$anthropic_key/" .env
-    fi
-    echo "Anthropic API key saved to .env"
-else
-    echo "Skipped Anthropic API key. Please add it to .env manually."
-fi
-echo ""
 
-# Get Composio API key and update .env
-echo "Retrieving Composio API key..."
-composio_key=$(composio whoami 2>&1 | grep -o "API Key: .*" | cut -d ' ' -f 3 || echo "")
 
-if [ ! -z "$composio_key" ]; then
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s/COMPOSIO_API_KEY=.*/COMPOSIO_API_KEY=$composio_key/" .env
-    else
-        sed -i "s/COMPOSIO_API_KEY=.*/COMPOSIO_API_KEY=$composio_key/" .env
-    fi
-    echo "Composio API key saved to .env"
-else
-    echo "Could not retrieve Composio API key automatically."
-    echo "Please add it to .env manually."
-fi
-echo ""
 
 # Install dependencies
 echo "Installing project dependencies..."
 echo ""
-npm install
+npm install @composio/core @composio/claude-agent-sdk @anthropic-ai/claude-agent-sdk
 cd server && npm install && cd ..
 echo ""
 echo "Dependencies installed"

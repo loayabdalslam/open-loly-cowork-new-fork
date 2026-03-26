@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const path = require('path');
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -23,6 +23,9 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    titleBarStyle: 'hidden',
+    icon: path.join(__dirname, 'renderer', 'assets', 'loly_icon.png'),
+    autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -31,6 +34,8 @@ function createWindow() {
       webSecurity: true
     }
   });
+
+  mainWindow.setMenuBarVisibility(false);
 
   // Load the app
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
@@ -74,4 +79,32 @@ app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
   }
+});
+
+// IPC Handlers
+  // Window controls
+  ipcMain.on('window-minimize', () => {
+    mainWindow.minimize();
+  });
+  
+  ipcMain.on('window-maximize', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  });
+  
+  ipcMain.on('window-close', () => {
+    mainWindow.close();
+  });
+
+ipcMain.handle('composio-onboarding', async () => {
+  shell.openExternal('https://app.composio.ai/');
+  return { success: true };
+});
+
+ipcMain.handle('composio:check-connection', async () => {
+  // Check if COMPOSIO_API_KEY is present in process.env
+  return !!process.env.COMPOSIO_API_KEY;
 });
