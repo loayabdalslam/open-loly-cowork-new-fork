@@ -70,13 +70,15 @@ app.post('/api/chat', async (req, res) => {
     chatId,
     userId = 'default-user',
     provider: providerName = 'claude',
-    model = null
+    model = null,
+    composioApiKey = null
   } = req.body;
 
   console.log('[CHAT] Request received:', message);
   console.log('[CHAT] Chat ID:', chatId);
   console.log('[CHAT] Provider:', providerName);
   console.log('[CHAT] Model:', model || '(default)');
+  if (composioApiKey) console.log('[CHAT] Using custom Composio API key');
 
   if (!message) {
     return res.status(400).json({ error: 'Message is required' });
@@ -112,19 +114,35 @@ app.post('/api/chat', async (req, res) => {
   });
 
   try {
-    // Get or create Composio session for this user
-    let composioSession = composioSessions.get(userId);
-    if (!composioSession) {
-      console.log('[COMPOSIO] Creating new session for user:', userId);
-      res.write(`data: ${JSON.stringify({ type: 'status', message: 'Initializing session...' })}\n\n`);
-      composioSession = await composio.create(userId);
-      composioSessions.set(userId, composioSession);
-      console.log('[COMPOSIO] Session created');
+    // Determine which Composio instance to use
+    let activeComposio = composio;
+    if (composioApiKey && composioApiKey !== process.env.COMPOSIO_API_KEY) {
+      activeComposio = new Composio({
+        apiKey: composioApiKey,
+        provider: new ClaudeAgentSDKProvider(),
+      });
+    }
 
-      // Update opencode.json with the MCP config if available
-      if (composioSession.mcp) {
-        updateOpencodeConfig(composioSession.mcp.url, composioSession.mcp.headers);
-        console.log('[OPENCODE] Updated opencode.json with MCP config');
+    // Get or create Composio session for this user
+    // Note: If we use a custom key, we don't cache as it might change frequently in settings
+    let composioSession;
+    if (activeComposio !== composio) {
+      console.log('[COMPOSIO] Creating temporary session with custom key');
+      composioSession = await activeComposio.create(userId);
+    } else {
+      composioSession = composioSessions.get(userId);
+      if (!composioSession) {
+        console.log('[COMPOSIO] Creating new session for user:', userId);
+        res.write(`data: ${JSON.stringify({ type: 'status', message: 'Initializing session...' })}\n\n`);
+        composioSession = await activeComposio.create(userId);
+        composioSessions.set(userId, composioSession);
+        console.log('[COMPOSIO] Session created');
+
+        // Update opencode.json with the MCP config if available
+        if (composioSession.mcp) {
+          updateOpencodeConfig(composioSession.mcp.url, composioSession.mcp.headers);
+          console.log('[OPENCODE] Updated opencode.json with MCP config');
+        }
       }
     }
 

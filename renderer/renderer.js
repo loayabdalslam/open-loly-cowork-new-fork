@@ -323,11 +323,23 @@ function loadChat(chat) {
     if (msgData.class.includes('user')) {
       contentDiv.textContent = msgData.content;
     } else if (msgData.class.includes('assistant')) {
-      // Restore complete HTML structure including tool calls
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'message-header';
+      headerDiv.innerHTML = `
+        <div class="assistant-avatar" title="Loly">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="9" r="8" fill="var(--accent-primary)"/>
+            <rect x="11" y="17" width="2" height="6" rx="1" fill="var(--text-tertiary)"/>
+            <circle cx="12" cy="9" r="5" fill="white" opacity="0.2"/>
+          </svg>
+        </div>
+        <span class="sender-name">Loly</span>
+      `;
+      messageDiv.appendChild(headerDiv);
+
       if (msgData.html) {
         contentDiv.innerHTML = msgData.html;
       } else {
-        // Fallback for old messages without HTML
         renderMarkdown(contentDiv);
       }
     }
@@ -906,7 +918,15 @@ async function handleSendMessage(e) {
   try {
     console.log('[Chat] Sending message to API...');
     // Pass chatId, provider, and model for session management
-    const response = await window.electronAPI.sendMessage(message, currentChatId, selectedProvider, selectedModel);
+    // Also pass Composio API key from localStorage if available
+    const composioApiKey = localStorage.getItem('COMPOSIO_API_KEY');
+    const response = await window.electronAPI.sendMessage(
+      message, 
+      currentChatId, 
+      selectedProvider, 
+      selectedModel,
+      { composioApiKey }
+    );
     console.log('[Chat] Response received');
 
     const reader = await response.getReader();
@@ -1096,15 +1116,32 @@ function createAssistantMessage() {
   const messageDiv = document.createElement('div');
   messageDiv.className = 'message assistant';
 
-  const contentDiv = document.createElement('div');
-  contentDiv.className = 'message-content';
+  messageDiv.innerHTML = `
+    <div class="message-header">
+      <div class="assistant-avatar" title="Loly">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="9" r="8" fill="var(--accent-primary)"/>
+          <rect x="11" y="17" width="2" height="6" rx="1" fill="var(--text-tertiary)"/>
+          <circle cx="12" cy="9" r="5" fill="white" opacity="0.2"/>
+        </svg>
+      </div>
+      <span class="sender-name">Loly</span>
+    </div>
+    <div class="message-content"></div>
+  `;
+
+  const contentDiv = messageDiv.querySelector('.message-content');
 
   const loadingDiv = document.createElement('div');
   loadingDiv.className = 'loading-indicator';
   loadingDiv.innerHTML = `
-    <svg class="loading-asterisk" viewBox="0 0 24 24" fill="none">
-      <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    </svg>
+    <div class="assistant-avatar" style="width: 20px; height: 20px; animation: pulse 1.5s infinite;">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="9" r="8" fill="var(--accent-primary)"/>
+        <rect x="11" y="17" width="2" height="6" rx="1" fill="var(--text-tertiary)"/>
+        <circle cx="12" cy="9" r="5" fill="white" opacity="0.2"/>
+      </svg>
+    </div>
   `;
 
   contentDiv.appendChild(loadingDiv);
@@ -1318,9 +1355,11 @@ function addInlineToolCall(contentDiv, toolName, toolInput, toolId) {
 
   toolDiv.innerHTML = `
     <div class="inline-tool-header" onclick="toggleInlineToolCall(this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-      </svg>
+      <div class="tool-call-icon running">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+        </svg>
+      </div>
       <span class="tool-name">${toolName}</span>
       <span class="tool-preview">${inputPreview}</span>
       <svg class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1391,11 +1430,11 @@ function addToolCall(name, input, status = 'running') {
 
   toolDiv.innerHTML = `
     <div class="tool-call-header" onclick="toggleToolCall(this)">
-      <div class="tool-call-icon ${status}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-        </svg>
-      </div>
+        <div class="tool-call-icon ${status}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+          </svg>
+        </div>
       <div class="tool-call-info">
         <div class="tool-call-name">${name}</div>
         <div class="tool-call-status">${status === 'running' ? 'Running...' : 'Completed'}</div>

@@ -220,14 +220,32 @@ body {
   background: var(--bg-app);
 }
 
+/* ==================== GLOBAL SVG FIX ==================== */
+svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  pointer-events: none; /* Usually SVGs are decorative inside buttons */
+}
+
+/* Allow interactive SVGs like remove icons to have pointer events */
+svg.remove-file,
+svg.delete-chat-btn,
+svg.expand-icon {
+  pointer-events: auto;
+}
+
 .left-sidebar {
+  width: 280px;
   background: var(--bg-side);
-  width: var(--sidebar-width);
-  min-width: var(--sidebar-width);
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border-light);
-  transition: width 0.2s ease, min-width 0.2s ease;
+  transition: width 0.3s ease;
+  position: relative;
+  overflow: visible;
 }
 
 .left-sidebar.collapsed {
@@ -768,11 +786,21 @@ body {
   color: var(--text-primary);
 }
 
-.tool-call-item .tool-icon {
-  width: 14px;
-  height: 14px;
+.tool-call-item .tool-icon,
+.tool-call-icon,
+.inline-tool-header svg {
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
   color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-call-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .tool-call-item .tool-name {
@@ -2183,6 +2211,40 @@ body {
   color: var(--text-primary);
   margin-bottom: 8px;
   letter-spacing: -0.5px;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.assistant-avatar {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.assistant-avatar svg {
+  width: 24px;
+  height: 24px;
+}
+
+.loading-indicator .assistant-avatar svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sender-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
 }
 
 .app-version {

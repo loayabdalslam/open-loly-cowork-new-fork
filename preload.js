@@ -36,8 +36,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
 
-  // Send a chat message to the backend with chat ID, provider, and model
-  sendMessage: async (message, chatId, provider = 'claude', model = null) => {
+  // Send a chat message to the backend with chat ID, provider, model, and extra options
+  sendMessage: async (message, chatId, provider = 'claude', model = null, options = {}) => {
     // Abort any previous request
     if (currentAbortController) {
       currentAbortController.abort();
@@ -52,13 +52,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       console.log('[PRELOAD] Chat ID:', chatId);
       console.log('[PRELOAD] Provider:', provider);
       console.log('[PRELOAD] Model:', model);
+      console.log('[PRELOAD] Options:', options);
 
       fetch(`${SERVER_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ message, chatId, provider, model }),
+        body: JSON.stringify({ message, chatId, provider, model, ...options }),
         signal
       })
         .then(response => {
