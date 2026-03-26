@@ -23,16 +23,15 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    titleBarStyle: 'hidden',
-    icon: path.join(__dirname, 'renderer', 'assets', 'loly_icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
       enableWebSQL: false,
       webSecurity: true
-    }
+    },
+    icon: path.join(__dirname, 'renderer', 'assets', 'loly_icon.png')
   });
 
   mainWindow.setMenuBarVisibility(false);
@@ -82,23 +81,6 @@ app.on('activate', () => {
 });
 
 // IPC Handlers
-  // Window controls
-  ipcMain.on('window-minimize', () => {
-    mainWindow.minimize();
-  });
-  
-  ipcMain.on('window-maximize', () => {
-    if (mainWindow.isMaximized()) {
-      mainWindow.unmaximize();
-    } else {
-      mainWindow.maximize();
-    }
-  });
-  
-  ipcMain.on('window-close', () => {
-    mainWindow.close();
-  });
-
 ipcMain.handle('composio-onboarding', async () => {
   shell.openExternal('https://app.composio.ai/');
   return { success: true };

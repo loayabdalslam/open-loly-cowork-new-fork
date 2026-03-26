@@ -92,10 +92,74 @@ function init() {
   updateGreeting();
   setupEventListeners();
   setupSettingsEventListeners();
-  setupWindowControls(); // Add this
   loadAllChats();
   renderChatHistory();
+  renderThemes();
+  applyThemeState();
   homeInput.focus();
+}
+
+// Theme definitions
+const themes = [
+  { 
+    value: 'default', 
+    label: 'Cream Coral', 
+    preview: { bg: '#f5f5f0', side: '#ffffff', accent: '#c4917b', bubble: '#e8e8e3' }
+  },
+  { 
+    value: 'dracula', 
+    label: 'Dracula', 
+    preview: { bg: '#282a36', side: '#21222c', accent: '#ff79c6', bubble: '#44475a' }
+  },
+  { 
+    value: 'one-dark', 
+    label: 'One Dark', 
+    preview: { bg: '#282c34', side: '#21252b', accent: '#98c379', bubble: '#3e4451' }
+  },
+  { 
+    value: 'monokai', 
+    label: 'Monokai', 
+    preview: { bg: '#272822', side: '#1e1f1c', accent: '#f92672', bubble: '#49483e' }
+  },
+  { 
+    value: 'github-light', 
+    label: 'GitHub Light', 
+    preview: { bg: '#f6f8fa', side: '#ffffff', accent: '#0969da', bubble: '#eff1f3' }
+  },
+  { 
+    value: 'nord', 
+    label: 'Nord', 
+    preview: { bg: '#2e3440', side: '#242933', accent: '#5e81ac', bubble: '#3b4252' }
+  }
+];
+
+function renderThemes() {
+  const themesGrid = document.getElementById('themesGrid');
+  if (!themesGrid) return;
+  
+  themesGrid.innerHTML = themes.map(theme => `
+    <div class="theme-card" data-theme="${theme.value}">
+      <div class="theme-preview">
+        <div class="preview-sidebar" style="background: ${theme.preview.side}"></div>
+        <div class="preview-main">
+          <div class="preview-bubble" style="background: ${theme.preview.bubble}"></div>
+          <div class="preview-bubble" style="width: 40%; background: ${theme.preview.accent}"></div>
+        </div>
+      </div>
+      <div class="theme-name">${theme.label}</div>
+    </div>
+  `).join('');
+  
+  // Re-query themeCards after rendering
+  const newThemeCards = document.querySelectorAll('.theme-card');
+  newThemeCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const theme = card.dataset.theme;
+      applyTheme(theme);
+      newThemeCards.forEach(c => c.classList.toggle('active', c === card));
+      localStorage.setItem('selectedTheme', theme);
+    });
+  });
 }
 
 function generateId() {
@@ -1842,17 +1906,6 @@ function setupSettingsEventListeners() {
     showNotification('API keys saved!');
   });
 
-  // Theme Toggling
-  themeCards.forEach(card => {
-    card.addEventListener('click', () => {
-      const theme = card.dataset.theme;
-      applyTheme(theme);
-      
-      themeCards.forEach(c => c.classList.toggle('active', c === card));
-      localStorage.setItem('selectedTheme', theme);
-    });
-  });
-
   // Composio Onboarding
   const saveComposioBtn = document.getElementById('saveComposioBtn');
   saveComposioBtn.addEventListener('click', () => {
@@ -1860,20 +1913,6 @@ function setupSettingsEventListeners() {
     if (composioKey) localStorage.setItem('COMPOSIO_API_KEY', composioKey);
     showNotification('Composio key saved!');
     checkComposioStatus();
-  });
-}
-
-function setupWindowControls() {
-  document.getElementById('minBtn').addEventListener('click', () => {
-    window.electronAPI.minimize();
-  });
-
-  document.getElementById('maxBtn').addEventListener('click', () => {
-    window.electronAPI.maximize();
-  });
-
-  document.getElementById('closeBtn').addEventListener('click', () => {
-    window.electronAPI.close();
   });
 }
 
@@ -1885,6 +1924,17 @@ function applyTheme(themeName) {
   if (themeName !== 'default') {
     document.body.classList.add(`theme-${themeName}`);
   }
+}
+
+function applyThemeState() {
+  const savedTheme = localStorage.getItem('selectedTheme') || 'default';
+  applyTheme(savedTheme);
+  
+  // Set active theme card
+  const themeCards = document.querySelectorAll('.theme-card');
+  themeCards.forEach(card => {
+    card.classList.toggle('active', card.dataset.theme === savedTheme);
+  });
 }
 
 function loadSettings() {
