@@ -38,13 +38,13 @@ const settingsNavItems = document.querySelectorAll('.settings-nav-item');
 const tabPanes = document.querySelectorAll('.tab-pane');
 
 // Settings Inputs
-const anthropicKeyInput = document.getElementById('anthropicKeyInput');
-const opencodeKeyInput = document.getElementById('opencodeKeyInput');
+const anthropicKeyInput = document.getElementById('anthropicApiKeyInput');
+const opencodeKeyInput = document.getElementById('opencodeApiKeyInput');
+const composioKeyInput = document.getElementById('composioApiKeyInput');
 const defaultProviderSelect = document.getElementById('defaultProviderSelect');
 const saveGeneralBtn = document.getElementById('saveGeneralBtn');
-const saveProvidersBtn = document.getElementById('saveProvidersBtn');
+const saveProvidersBtn = document.getElementById('saveApiKeysBtn');
 const themeCards = document.querySelectorAll('.theme-card');
-const composioOnboardingBtn = document.getElementById('composioOnboardingBtn');
 const statusIndicator = document.getElementById('statusIndicator');
 const statusText = document.getElementById('statusText');
 
@@ -962,93 +962,68 @@ async function handleSendMessage(e) {
           }
 
           if (line.startsWith('data: ')) {
-          try {
-            const jsonStr = line.slice(6);
-            const data = JSON.parse(jsonStr);
+            try {
+              const jsonStr = line.slice(6);
+              const data = JSON.parse(jsonStr);
 
-            // Debug: log all received events
-            console.log('[Frontend] Received event:', data.type, data.name || '');
+              // Debug: log all received events
+              console.log('[Frontend] Received event:', data.type, data.name || '');
 
-            if (data.type === 'done') {
-              break;
-            } else if (data.type === 'text' && data.content) {
+              // STREAM 1: THINKING - Reasoning process
+              if (data.type === 'thinking' && data.content) {
+                console.log('[Frontend] Thinking:', data.content.substring(0, 50));
+                appendToThinking(contentDiv, data.content);
+              }
+              
+              // STREAM 2: TOOL EXECUTION - When tool starts
+              else if (data.type === 'tool_use' && data.name) {
+              console.log('[Frontend] Tool execution:', data.name);
+              const toolName = data.name;
+              const toolInput = data.input || {};
+              const toolId = data.id;
+              const toolCall = addToolCall(toolName, toolInput, 'running');
+              addInlineToolCall(contentDiv, toolName, toolInput, toolCall.id);
+              if (toolId) {
+                pendingToolCalls.set(toolId, toolCall.id);
+              }
+              if (toolName === 'TodoWrite' && toolInput.todos) {
+                updateTodos(toolInput.todos);
+              }
+            }
+            
+            // STREAM 3: TOOL RESULT - After tool completes
+            else if (data.type === 'tool_result' && data.status === 'completed') {
+              console.log('[Frontend] Tool result:', data.name);
+              const toolId = data.id;
+              if (toolId && pendingToolCalls.has(toolId)) {
+                const localId = pendingToolCalls.get(toolId);
+                updateToolCallStatus(localId, 'success');
+                pendingToolCalls.delete(toolId);
+              }
+            }
+            
+            // STREAM 4: TEXT RESPONSE - Final response
+            else if (data.type === 'text' && data.content) {
+              console.log('[Frontend] Text response:', data.content.substring(0, 50));
               if (!hasContent) {
                 const loadingIndicator = contentDiv.querySelector('.loading-indicator');
                 if (loadingIndicator) loadingIndicator.remove();
               }
               hasContent = true;
               receivedStreamingText = true;
-              if (data.isReasoning) {
-                appendToThinking(contentDiv, data.content);
-              } else {
-                appendToContent(contentDiv, data.content);
-              }
-            } else if (data.type === 'tool_use') {
-              const toolName = data.name || data.tool || 'Tool';
-              const toolInput = data.input || {};
-              const apiId = data.id; // API's tool ID
-              const toolCall = addToolCall(toolName, toolInput, 'running');
-              addInlineToolCall(contentDiv, toolName, toolInput, toolCall.id);
-              if (apiId) {
-                pendingToolCalls.set(apiId, toolCall.id);
-              }
-
-              if (toolName === 'TodoWrite' && toolInput.todos) {
-                updateTodos(toolInput.todos);
-              }
-
-              hasContent = true;
-            } else if (data.type === 'tool_result' || data.type === 'result') {
-              const result = data.result || data.content || data;
-              const apiId = data.tool_use_id;
-
-              // Find the matching tool call by API ID
-              const localId = apiId ? pendingToolCalls.get(apiId) : null;
-              if (localId) {
-                updateToolCallResult(localId, result);
-                updateToolCallStatus(localId, 'success');
-                updateInlineToolResult(localId, result);
-                pendingToolCalls.delete(apiId);
-              }
-
-              if (!hasContent) {
-                const loadingIndicator = contentDiv.querySelector('.loading-indicator');
-                if (loadingIndicator) loadingIndicator.remove();
-              }
-              hasContent = true;
-            } else if (data.type === 'assistant' && data.message) {
-              if (data.message.content && Array.isArray(data.message.content)) {
-                for (const block of data.message.content) {
-                  if (block.type === 'tool_use') {
-                    const toolName = block.name || 'Tool';
-                    const toolInput = block.input || {};
-                    const apiId = block.id; // API's tool ID
-                    const toolCall = addToolCall(toolName, toolInput, 'running');
-                    addInlineToolCall(contentDiv, toolName, toolInput, toolCall.id);
-                    if (apiId) {
-                      pendingToolCalls.set(apiId, toolCall.id);
-                    }
-                    hasContent = true;
-                  } else if (block.type === 'text' && block.text) {
-                    if (!receivedStreamingText) {
-                      if (!hasContent) {
-                        const loadingIndicator = contentDiv.querySelector('.loading-indicator');
-                        if (loadingIndicator) loadingIndicator.remove();
-                      }
-                      hasContent = true;
-                      appendToContent(contentDiv, block.text);
-                    }
-                  }
-                }
-              }
-
-              if (data.message.content && Array.isArray(data.message.content)) {
-                for (const block of data.message.content) {
-                  if (block.type === 'tool_use' && block.name === 'TodoWrite') {
-                    updateTodos(block.input.todos);
-                  }
-                }
-              }
+              appendToContent(contentDiv, data.content);
+            }
+            
+            // DONE - Stream complete
+            else if (data.type === 'done') {
+              console.log('[Frontend] Done');
+              break;
+            }
+            
+            // Error handling
+            else if (data.type === 'error') {
+              console.error('[Frontend] Error:', data.message);
+              break;
             }
 
             scrollToBottom();
@@ -1057,12 +1032,12 @@ async function handleSendMessage(e) {
           }
         }
       }
-      }
-    } catch (readerError) {
-      console.error('[Chat] Reader error:', readerError);
-      clearInterval(heartbeatChecker);
-      throw readerError; // Re-throw to outer catch
     }
+  } catch (readerError) {
+    console.error('[Chat] Reader error:', readerError);
+    if (heartbeatChecker) clearInterval(heartbeatChecker);
+    throw readerError; // Re-throw to outer catch
+  }
   } catch (error) {
     clearInterval(heartbeatChecker);
 
@@ -1155,6 +1130,8 @@ function createAssistantMessage() {
 }
 
 function appendToContent(contentDiv, content) {
+  console.log('[appendToContent] Called with content:', content.substring(0, 30));
+  
   if (!contentDiv.dataset.rawContent) {
     contentDiv.dataset.rawContent = '';
   }
@@ -1164,6 +1141,11 @@ function appendToContent(contentDiv, content) {
   const container = getCurrentMarkdownContainer(contentDiv);
   container.dataset.rawContent += content;
   renderMarkdownContainer(container);
+
+  // Force visibility
+  contentDiv.style.display = 'block';
+  contentDiv.style.visibility = 'visible';
+  contentDiv.style.opacity = '1';
 
   // Check for Anchor Browser live URL in content
   const browserInfo = extractBrowserUrl(contentDiv.dataset.rawContent);
@@ -1881,7 +1863,7 @@ function setupSettingsEventListeners() {
   });
 
   // Save General Settings
-  saveGeneralBtn.addEventListener('click', () => {
+  saveGeneralBtn?.addEventListener('click', () => {
     const defaultProvider = defaultProviderSelect.value;
     localStorage.setItem('defaultProvider', defaultProvider);
     
@@ -1895,8 +1877,7 @@ function setupSettingsEventListeners() {
   });
 
   // Save Providers Settings
-  const saveApiKeysBtn = document.getElementById('saveApiKeysBtn'); // Fix ID
-  saveApiKeysBtn.addEventListener('click', () => {
+  saveProvidersBtn?.addEventListener('click', () => {
     const anthropicKey = document.getElementById('anthropicApiKeyInput').value.trim(); // Fix IDs
     const opencodeKey = document.getElementById('opencodeApiKeyInput').value.trim();
     

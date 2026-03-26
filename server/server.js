@@ -35,7 +35,6 @@ async function initializeComposioSession() {
     composioSessions.set(defaultUserId, defaultComposioSession);
     console.log('[COMPOSIO] Session ready');
 
-    // Update opencode.json with the MCP config if available
     if (defaultComposioSession.mcp) {
       updateOpencodeConfig(defaultComposioSession.mcp.url, defaultComposioSession.mcp.headers);
       console.log('[OPENCODE] Updated opencode.json with MCP config');
@@ -64,14 +63,14 @@ function updateOpencodeConfig(mcpUrl, mcpHeaders) {
 app.use(cors());
 app.use(express.json());
 
-// Chat endpoint using provider abstraction
+// Chat endpoint with robust streaming and provider abstraction
 app.post('/api/chat', async (req, res) => {
   const {
     message,
     chatId,
     userId = 'default-user',
-    provider: providerName = 'claude',  // Per-request provider selection
-    model = null  // Per-request model selection
+    provider: providerName = 'claude',
+    model = null
   } = req.body;
 
   console.log('[CHAT] Request received:', message);
@@ -91,14 +90,17 @@ app.post('/api/chat', async (req, res) => {
     });
   }
 
+  // Set SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
-  res.write(`data: ${JSON.stringify({ type: 'connected', message: 'Processing request...' })}\n\n`);
+  // Send connection confirmation
+  res.write(`data: ${JSON.stringify({ type: 'connected', message: 'Starting chat...' })}\n\n`);
 
+  // Heartbeat to keep connection alive
   const heartbeatInterval = setInterval(() => {
     if (!res.writableEnded) {
       res.write(': heartbeat\n\n');
@@ -126,10 +128,8 @@ app.post('/api/chat', async (req, res) => {
       }
     }
 
-    // Get tools from the session
+    // Get tools and create MCP server for Composio
     const tools = await composioSession.tools();
-
-    // Create a local MCP server for Composio tools
     const composioServer = createSdkMcpServer({
       name: "composio",
       version: "1.0.0",
@@ -138,14 +138,9 @@ app.post('/api/chat', async (req, res) => {
 
     // Get the provider instance
     const provider = getProvider(providerName);
-
-    // Build MCP servers config - passed to provider
-    const mcpServers = {
-      composio: composioServer
-    };
+    const mcpServers = { composio: composioServer };
 
     console.log('[CHAT] Using provider:', provider.name);
-    console.log('[CHAT] All stored sessions:', Array.from(provider.sessions.entries()));
 
     // Stream responses from the provider
     try {
@@ -158,15 +153,12 @@ app.post('/api/chat', async (req, res) => {
         allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'TodoWrite', 'Skill'],
         maxTurns: 100
       })) {
-        if (chunk.type === 'tool_use') {
-          console.log('[SSE] Sending tool_use:', chunk.name);
-        }
-        if (chunk.type === 'text') {
-          console.log('[SSE] Sending text chunk, length:', chunk.content?.length || 0);
-        }
+        // Log important events
+        if (chunk.type === 'tool_use') console.log('[SSE] Tool use:', chunk.name);
+        if (chunk.type === 'text' && !chunk.isReasoning) console.log('[SSE] Text chunk, length:', chunk.content?.length);
+
         // Send chunk as SSE
-        const data = `data: ${JSON.stringify(chunk)}\n\n`;
-        res.write(data);
+        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
       }
     } catch (streamError) {
       console.error('[CHAT] Stream error during iteration:', streamError);
@@ -177,45 +169,40 @@ app.post('/api/chat', async (req, res) => {
 
     clearInterval(heartbeatInterval);
     if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ type: 'done', message: 'Complete' })}\n\n`);
       res.end();
     }
     console.log('[CHAT] Stream completed');
+
   } catch (error) {
     clearInterval(heartbeatInterval);
-    console.error('[CHAT] Error:', error);
-    res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
-    res.end();
+    console.error('[CHAT] Error:', error.message);
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
   }
 });
 
-// Abort endpoint to stop active queries
+// Abort endpoint
 app.post('/api/abort', (req, res) => {
   const { chatId, provider: providerName = 'claude' } = req.body;
-
-  if (!chatId) {
-    return res.status(400).json({ error: 'chatId is required' });
-  }
-
-  console.log('[ABORT] Request to abort chatId:', chatId, 'provider:', providerName);
+  if (!chatId) return res.status(400).json({ error: 'chatId is required' });
 
   try {
     const provider = getProvider(providerName);
     const aborted = provider.abort(chatId);
-
     if (aborted) {
-      console.log('[ABORT] Successfully aborted chatId:', chatId);
       res.json({ success: true, message: 'Query aborted' });
     } else {
-      console.log('[ABORT] No active query found for chatId:', chatId);
       res.json({ success: false, message: 'No active query to abort' });
     }
   } catch (error) {
-    console.error('[ABORT] Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get available providers endpoint
+// Get available providers
 app.get('/api/providers', (_req, res) => {
   res.json({
     providers: getAvailableProviders(),
@@ -223,7 +210,7 @@ app.get('/api/providers', (_req, res) => {
   });
 });
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
@@ -232,28 +219,22 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-await initializeProviders();
-await initializeComposioSession();
-
-// Start server and keep reference to prevent garbage collection
-const server = app.listen(PORT, () => {
-  console.log(`\n✓ Backend server running on http://localhost:${PORT}`);
-  console.log(`✓ Chat endpoint: POST http://localhost:${PORT}/api/chat`);
-  console.log(`✓ Providers endpoint: GET http://localhost:${PORT}/api/providers`);
-  console.log(`✓ Health check: GET http://localhost:${PORT}/api/health`);
-  console.log(`✓ Available providers: ${getAvailableProviders().join(', ')}\n`);
-});
-
-// Keep the process alive
-server.on('error', (err) => {
-  console.error('Server error:', err);
-});
-
-// Prevent the process from exiting
-process.on('SIGINT', () => {
-  console.log('\nShutting down server...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
+// Initialize and start server
+const startServer = async () => {
+  await initializeProviders();
+  await initializeComposioSession();
+  
+  const server = app.listen(PORT, () => {
+    console.log(`\n✓ Backend server running on http://localhost:${PORT}`);
   });
-});
+
+  server.on('error', (err) => {
+    console.error('Server error:', err);
+  });
+
+  process.on('SIGINT', () => {
+    server.close(() => process.exit(0));
+  });
+};
+
+startServer();

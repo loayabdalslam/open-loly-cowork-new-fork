@@ -6,7 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Open Loly Cowork</title>
   <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 
@@ -57,9 +58,6 @@
       <!-- Home View (shown when no messages) -->
       <div class="home-view" id="homeView">
         <div class="greeting-section">
-          <div class="branding-icon">
-            <img src="assets/loly_icon.png" alt="Loly" class="loly-logo">
-          </div>
           <div class="greeting">
             <h1 class="greeting-text">Open Loly Cowork</h1>
             <p class="tagline">The sweetest way to build with AI</p>
@@ -69,8 +67,8 @@
         <div class="input-container home-input">
           <form id="homeForm" class="input-form">
             <div class="input-wrapper">
-              <textarea id="homeInput" class="message-input" placeholder="What should we build today?" autocomplete="off"
-                rows="1"></textarea>
+              <textarea id="homeInput" class="message-input" placeholder="What should we build today?"
+                autocomplete="off" rows="1"></textarea>
               <div class="input-controls">
                 <div class="left-controls">
                   <input type="file" id="homeFileInput" class="file-input-hidden" multiple />
@@ -369,14 +367,18 @@
         <div class="settings-nav-item" data-tab="themes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
-            <path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"></path>
+            <path
+              d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z">
+            </path>
             <line x1="9" y1="22" x2="15" y2="22"></line>
           </svg>
           Themes
         </div>
         <div class="settings-nav-item" data-tab="composio">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <path
+              d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+            </path>
             <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
             <line x1="12" y1="22.08" x2="12" y2="12"></line>
           </svg>
@@ -400,7 +402,7 @@
             </svg>
           </button>
         </header>
-        
+
         <div class="tab-pane active" id="general">
           <div class="settings-group">
             <h3>Appearance</h3>
@@ -414,6 +416,9 @@
                 <option value="opencode">Opencode</option>
               </select>
             </div>
+          </div>
+          <div class="settings-actions">
+            <button class="primary-btn" id="saveGeneralBtn">Save Settings</button>
           </div>
         </div>
 
@@ -455,7 +460,8 @@
               <img src="https://platform.composio.dev/favicon.ico" alt="Composio" class="composio-logo-small">
               <h3>Composio Integration</h3>
             </div>
-            <p>Composio provides 100+ tools for your AI agents. Connect your account to enable powerful capabilities.</p>
+            <p>Composio provides 100+ tools for your AI agents. Connect your account to enable powerful capabilities.
+            </p>
             <div class="settings-group">
               <div class="setting-item">
                 <div class="setting-info">
@@ -465,8 +471,8 @@
               </div>
             </div>
             <div class="onboarding-status" id="composioStatus">
-              <span class="status-indicator"></span>
-              <span class="status-text">Checking connection...</span>
+              <span class="status-indicator" id="statusIndicator"></span>
+              <span class="status-text" id="statusText">Checking connection...</span>
             </div>
             <div class="settings-actions">
               <button class="primary-btn" id="saveComposioBtn">Update Connection</button>
@@ -476,22 +482,27 @@
         </div>
 
         <div class="tab-pane" id="credits">
-          <div class="credits-section">
-            <div class="credits-header">
-              <img src="assets/loly_icon.png" alt="Loly" class="credits-logo">
-              <h3>Open Loly Cowork v1.1.0</h3>
+          <div class="credits-container">
+            <div class="app-info">
+              <h2 class="app-title">Open Loly Cowork</h2>
+              <span class="app-version">Version 1.1.0</span>
+              <p class="app-tagline">A sweetness-infused fork of Open Claude Cowork, bringing multiple providers and premium
+                themes to your desktop.</p>
             </div>
-            <p>A sweetness-infused fork of Open Claude Cowork, bringing multiple providers and premium themes to your desktop.</p>
-            <hr>
-            <div class="credit-item">
-              <h4>Lead Developer</h4>
-              <p>LOAII ABDALSLAM</p>
+
+            <div class="credits-grid">
+              <div class="credit-card">
+                <span class="credit-label">Lead Developer</span>
+                <span class="credit-value">Loaii Abdalslam</span>
+              </div>
+
+              <div class="credit-card">
+                <span class="credit-label">Foundations</span>
+                <span class="credit-value">Claude Agent SDK & Composio Tool Router</span>
+              </div>
             </div>
-            <div class="credit-item">
-              <h4>Foundations</h4>
-              <p>Built on Claude Agent SDK & Composio Tool Router</p>
-            </div>
-            <div class="credit-footer">
+
+            <div class="credits-footer">
               <p>© 2026 Open Loly Project. All rights reserved.</p>
             </div>
           </div>
@@ -502,7 +513,5 @@
 
   <script src="renderer.js"></script>
 </body>
-
-</html>
 
 </html>

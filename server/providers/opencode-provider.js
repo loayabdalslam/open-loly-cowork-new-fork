@@ -40,14 +40,59 @@ export class OpencodeProvider extends BaseProvider {
   }
 
   /**
+   * Wait for the server to be ready by polling the URL
+   */
+  async waitForServer(url, timeoutMs = 20000) {
+    const startTime = Date.now();
+    console.log(`[Opencode] Waiting for server at ${url} (timeout: ${timeoutMs}ms)...`);
+    
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 1000);
+        
+        // Use a real fetch without a silent catch to detect connection errors
+        await fetch(url, { 
+          method: 'GET',
+          signal: controller.signal 
+        });
+        
+        clearTimeout(timeout);
+        console.log('[Opencode] Server responded successfully');
+        return true;
+      } catch (error) {
+        // If it's a 404, 401, etc. (from the response, not the catch), it's reachable
+        // But here we are in the catch, so it's a network error
+        if (error.name === 'AbortError') {
+          console.log('[Opencode] Server connection timed out, but likely reachable...');
+          return true;
+        }
+        
+        if (error.code !== 'ECONNREFUSED') {
+          // Some other network error, but the port might be open
+          console.log('[Opencode] Server reachable but experienced error:', error.message);
+          return true;
+        }
+        // If ECONNREFUSED, continue polling
+      }
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+    throw new Error(`Opencode server at ${url} failed to respond within ${timeoutMs}ms`);
+  }
+
+  /**
    * Initialize the Opencode client/server
    */
   async initialize() {
     if (this.client) return;
 
     try {
+      const serverUrl = `http://${this.hostname}:${this.port}`;
+      
       if (this.useExistingServer && this.existingServerUrl) {
         console.log('[Opencode] Connecting to existing server:', this.existingServerUrl);
+        await this.waitForServer(this.existingServerUrl);
         this.client = createOpencodeClient({
           baseUrl: this.existingServerUrl
         });
@@ -77,11 +122,11 @@ export class OpencodeProvider extends BaseProvider {
             close: () => opencodeProcess.kill()
           };
           
-          // Wait a bit for server to start
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          // Wait for server to start properly
+          await this.waitForServer(serverUrl);
           
           this.client = createOpencodeClient({
-            baseUrl: `http://${this.hostname}:${this.port}`
+            baseUrl: serverUrl
           });
         } else {
           // Normal SDK initialization for other platforms
@@ -174,20 +219,31 @@ export class OpencodeProvider extends BaseProvider {
     }
 
     try {
-      // Note: MCP servers are configured in opencode.json, not passed via API
-      // The backend server.js writes the Composio MCP URL to opencode.json
-
-      // Create session if needed
+      // Create session with retries if needed
       if (!sessionId) {
         console.log('[Opencode] Creating session with model:', modelToUse);
-        const sessionResult = await this.client.session.create({
-          body: {
-            config: {
-              model: modelToUse
-            }
+        
+        let retries = 3;
+        while (retries > 0) {
+          try {
+            const sessionResult = await this.client.session.create({
+              body: {
+                config: {
+                  model: modelToUse
+                }
+              }
+            });
+            sessionId = sessionResult.data?.id || sessionResult.id;
+            break; // Success!
+          } catch (createError) {
+            retries--;
+            console.error(`[Opencode] Session creation failed (${retries} retries left):`, createError.message);
+            if (retries === 0) throw createError;
+            // Wait a bit before retry
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
-        });
-        sessionId = sessionResult.data?.id || sessionResult.id;
+        }
+
         if (chatId && sessionId) {
           this.setSession(chatId, sessionId);
         }
