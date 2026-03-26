@@ -1,228 +1,121 @@
 <p align="center">
-  <h1 align="center">Open Loly Cowork</h1>
+  <h1 align="center">Open Loly Cowork 🍭</h1>
 </p>
 
 <p align="center">
-  <a href="https://platform.composio.dev?utm_source=Github&utm_medium=Banner&utm_content=open-claude-cowork">
-    <img src="assets/open_claude_cowork_banner.png" width="800">
-  </a>
+  <img src="renderer/assets/loly_icon.png" width="120" alt="Loly Logo">
 </p>
 
 <p align="center">
-  <a href="https://platform.composio.dev?utm_source=github&utm_medium=gif&utm_campaign=2101&utm_content=open-claude-cowork">
-    <img src="open-claude-cowork.gif" alt="Secure Clawdbot Demo" width="800">
-  </a>
-</p>
-
-<p align="center">
-  <a href="https://docs.composio.dev/tool-router/overview">
-    <img src="https://img.shields.io/badge/Composio-Tool%20Router-orange" alt="Composio">
-  </a>
-  <a href="https://platform.claude.com/docs/en/agent-sdk/overview">
-    <img src="https://img.shields.io/badge/Claude-Agent%20SDK-blue" alt="Claude Agent SDK">
-  </a>
-  <a href="https://github.com/anthropics/claude-code">
-    <img src="https://img.shields.io/badge/Powered%20by-Claude%20Code-purple" alt="Claude Code">
-  </a>
-  <a href="https://twitter.com/composio">
-    <img src="https://img.shields.io/twitter/follow/composio?style=social" alt="Twitter">
-  </a>
-</p>
-
-<p align="center">
-  An open-source desktop chat application powered by Claude Agent SDK and Composio Tool Router. Automate your work end-to-end across desktop and all your work apps in one place.
-  <br><br>
-  <a href="https://platform.composio.dev?utm_source=github&utm_medium=description&utm_campaign=2101&utm_content=open-claude-cowork">
-    <b>Get your free API key to get started →</b>
-  </a>
-</p>
-
-<p align="center">
-  <i>Pst. hey, you, join our stargazers :)</i>
+  <b>A premium, sweetness-infused desktop AI agent interface.</b>
   <br>
-  <a href="https://github.com/ComposioHQ/open-claude-cowork">
-    <img src="https://img.shields.io/github/stars/ComposioHQ/open-claude-cowork.svg?style=social&label=Star&maxAge=2592000" alt="GitHub stars">
-  </a>
+  <i>This repository is a newer, enhanced version of <a href="https://github.com/ComposioHQ/open-claude-cowork">ComposioHQ/open-claude-cowork</a>.</i>
 </p>
 
 ---
 
-## What's Inside
+## 🌟 Overview
 
-This repo includes two powerful AI tools:
+**Open Loly Cowork** is an advanced desktop chat application designed for seamless interaction with AI agents. Built on top of the Claude Agent SDK and integrated with Composio's Tool Router, it allows you to automate complex workflows across 100+ tools directly from a beautiful, responsive interface.
 
-| | **Open Loly Cowork** | 🦑 **Secure Clawdbot** |
-|---|---|---|
-| **What** | Full-featured desktop chat interface | Personal AI assistant on messaging |
-| **Where** | macOS, Windows, Linux | WhatsApp, Telegram, Signal, iMessage |
-| **Best for** | Work automation, multi-chat sessions | On-the-go AI access, reminders, memory |
+This fork ("Loly Version") introduces significant UI/UX improvements, multi-provider support, and a more robust desktop integration inspired by modern, premium design aesthetics.
 
-Both include **500+ app integrations** via Composio (Gmail, Slack, GitHub, Google Drive, and more).
+## ✨ Key Features
 
----
+### 🍭 Premium UI/UX
+- **Loly Aesthetics**: High-contrast, vibrant themes including the signature "Cream Coral" look.
+- **Glassmorphism & Animations**: Subtle micro-animations and smooth transitions for a high-end feel.
+- **Collapsible Reasoning**: "Thinking" sections are collapsed by default to keep the focus on the conversation.
+- **Collapsible Tool Calls**: Detailed JSON input/output for tools are hidden in beautiful, interactive panels.
 
-## Quick Start
+### 🤖 Multi-Provider & Model Support
+- **Claude (Anthropic)**: Full support for Opus, Sonnet, and Haiku models via the Claude Agent SDK.
+- **Opencode**: Integration with Opencode.ai, providing access to:
+    - Big Pickle (Reasoning model)
+    - GPT-5 Nano
+    - Grok Code Fast
+    - GLM-4.7 & MiniMax
+    - Any Anthropic model via Opencode routing.
 
-### Open Loly Cowork
+### 🛠️ Advanced Integration
+- **Dynamic Composio Settings**: Manage your Composio API key directly within the app settings. No more hardcoding keys in `.env`.
+- **Keyless Server Startup**: The backend server initializes on-demand, allowing you to start the app even before configuring your API keys.
+- **Composio Tool Router**: Access 100+ native integrations (Gmail, Slack, GitHub, Browser, etc.) with real-time status visualization.
 
+## 🚀 Quick Start
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- [npm](https://www.npmjs.com/) (v10 or higher)
+
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone [your-repo-url]
+   cd open-claude-cowork
+   ```
+
+2. Install dependencies for all processes:
+   ```bash
+   # Root directory (Electron app)
+   npm install
+
+   # Server directory (Backend)
+   CD server && npm install
+   ```
+
+### Running the App
+Start both the backend server and the Electron application:
+
+**Terminal 1 (Backend Server):**
 ```bash
-git clone https://github.com/ComposioHQ/open-claude-cowork.git
-cd open-claude-cowork
-./setup.sh
-```
-
-Then run in two terminals:
-```bash
-# Terminal 1
-cd server && npm start
-
-# Terminal 2
+cd server
 npm start
 ```
 
-### 🦑 Secure Clawdbot
-
+**Terminal 2 (Desktop App):**
 ```bash
-cd clawd
-npm install
-node cli.js
+# From the root directory
+npm start
 ```
 
-Select "Terminal chat" to test, or "Start gateway" to connect WhatsApp/Telegram/Signal/iMessage.
+## ⚙️ Configuration
 
-See [Secure Clawdbot Documentation](./clawd/README.md) for full setup.
+You can configure your API keys directly in the app settings:
+1. Click the **Settings** (gear) icon in the bottom-left corner.
+2. Go to the **Providers** tab to enter your Anthropic or Opencode keys.
+3. Go to the **Composio** tab to manage your tool integration key.
 
----
+*Note: Environment variables in a `.env` file are still supported for global defaults.*
 
-## Features
+## 🏗️ Technical Architecture
 
-### Open Loly Cowork
-- **Multi-Provider Support** - Claude Agent SDK or Opencode for different models
-- **Persistent Sessions** - Context maintained across messages
-- **Real-time Streaming** - Token-by-token response display
-- **Tool Visualization** - See tool inputs/outputs in the sidebar
-- **Skills Support** - Extend Claude with custom capabilities
-- **Modern UI** - Clean, dark-themed interface
+| Component | Technology | Role |
+|-----------|------------|------|
+| **Frontend** | Vanilla JS + HTML5 + CSS3 | Premium UI rendering & streaming logic |
+| **Main Process** | Electron.js | Desktop window management & system IPC |
+| **Backend** | Node.js + Express | Provider abstraction & long-running agent logic |
+| **AI SDKs** | Claude Agent SDK + Opencode | Agentic reasoning & tool orchestration |
+| **Tooling** | Composio Tool Router + MCP | 100+ app integrations & browser control |
 
-### 🦑 Secure Clawdbot
-- **Multi-Platform** - WhatsApp, Telegram, Signal, iMessage
-- **Persistent Memory** - Remembers facts, preferences, daily notes
-- **Browser Automation** - Navigate, click, fill forms, screenshot
-- **Scheduling** - Natural language reminders and cron jobs
-- **500+ Integrations** - Gmail, Slack, GitHub, Calendar via Composio
+## 📁 Project Structure
+- `main.js`: Electron main process & IPC handlers.
+- `preload.js`: Secure bridge between Electron and the Renderer.
+- `renderer/`: Frontend assets, CSS themes, and chat logic.
+- `server/`: Backend implementation.
+    - `providers/`: Abstraction layer for different AI backends.
+    - `server.js`: Express SSE server for streaming responses.
+- `.claude/skills/`: Custom agent skills to extend capabilities.
 
----
-
-## Tech Stack
-
-| Component | Technology |
-|-----------|------------|
-| Desktop | Electron.js |
-| Backend | Node.js + Express |
-| AI | Claude Agent SDK + Opencode SDK |
-| Tools | Composio Tool Router + MCP |
-| Streaming | Server-Sent Events (SSE) |
-
----
-
-## Configuration
-
-### API Keys
-
-You need:
-- **Anthropic API key** from [console.anthropic.com](https://console.anthropic.com)
-- **Composio API key** from [app.composio.dev](https://app.composio.dev)
-- **Opencode API key** (optional) from [opencode.dev](https://opencode.dev)
-
-```bash
-cp .env.example .env
-# Edit .env with your keys
-```
-
-### Skills
-
-Extend Claude with custom skills by adding `SKILL.md` files to `.claude/skills/`:
-
-```markdown
----
-description: Use this skill when the user asks about [topic]
----
-
-# My Skill
-
-Instructions for Claude...
-```
-
-See [Agent Skills documentation](https://platform.claude.com/docs/en/agent-sdk/skills) for details.
-
----
-
-## Project Structure
-
-```
-open-claude-cowork/
-├── main.js              # Electron main process
-├── renderer/            # Frontend UI
-├── server/              # Backend + providers
-│   ├── providers/       # Claude & Opencode implementations
-│   └── server.js        # Express server
-├── clawd/               # Secure Clawdbot (messaging bot)
-│   ├── cli.js           # Entry point
-│   ├── adapters/        # WhatsApp, Telegram, Signal, iMessage
-│   └── README.md        # Full documentation
-└── .claude/skills/      # Custom agent skills
-```
-
----
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| Can't connect to backend | Ensure server is running on port 3001 |
-| API key error | Check `.env` - Anthropic keys start with `sk-ant-` |
-| Session not persisting | Check server logs for session ID |
-| Streaming slow | Check firewall/network for SSE connections |
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-## Resources
-
-- [Claude Agent SDK](https://docs.anthropic.com/en/docs/claude-agent-sdk)
-- [Composio Tool Router](https://docs.composio.dev/tool-router)
-- [Composio Dashboard](https://app.composio.dev)
-- [Electron Docs](https://www.electronjs.org/docs)
-
----
-
-## Community
-
-- [Discord](https://discord.com/invite/composio) - Chat with developers
-- [Twitter/X](https://x.com/composio) - Updates and features
-- [support@composio.dev](mailto:support@composio.dev) - Questions
+## 🤝 Relationship to Original Repo
+This project is an evolved successor to the original `open-claude-cowork` implementation. It maintains backward compatibility with the original concepts while introducing:
+- A completely overhauled "Loly" design system.
+- Support for the Opencode ecosystem.
+- Enhanced reliability for Windows environments.
+- Streamlined settings management for easier onboarding.
 
 ---
 
 <p align="center">
-  <b>Join 200,000+ developers building agents in production</b>
-</p>
-
-<p align="center">
-  <a href="https://platform.composio.dev/?utm_source=github&utm_medium=community&utm_campaign=2101&utm_content=Open Loly Cowork">
-    <img src="https://img.shields.io/badge/Get_Started_For_Free-4F46E5?style=for-the-badge" alt="Get Started For Free"/>
-  </a>
-</p>
-
-<p align="center">
-  Built with Claude Code and Composio
+  Built with ❤️ by the Open Loly Team.
 </p>

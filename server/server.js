@@ -17,17 +17,30 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Initialize Composio
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new ClaudeAgentSDKProvider(),
-});
+// Initialize global Composio - wrap in try/catch to prevent crash if key is missing
+let composio = null;
+if (process.env.COMPOSIO_API_KEY) {
+  try {
+    composio = new Composio({
+      apiKey: process.env.COMPOSIO_API_KEY,
+      provider: new ClaudeAgentSDKProvider(),
+    });
+    console.log('[COMPOSIO] Global instance initialized with environment key');
+  } catch (err) {
+    console.warn('[COMPOSIO] Failed to initialize global instance:', err.message);
+  }
+} else {
+  console.log('[COMPOSIO] No API key in .env, will use dynamic key if provided via chat');
+}
 
 const composioSessions = new Map();
 let defaultComposioSession = null;
 
-// Pre-initialize Composio session on startup
 async function initializeComposioSession() {
+  if (!composio) {
+    console.log('[COMPOSIO] Skipping pre-initialization (no key in .env)');
+    return;
+  }
   const defaultUserId = 'default-user';
   console.log('[COMPOSIO] Pre-initializing session for:', defaultUserId);
   try {
@@ -116,17 +129,28 @@ app.post('/api/chat', async (req, res) => {
   try {
     // Determine which Composio instance to use
     let activeComposio = composio;
-    if (composioApiKey && composioApiKey !== process.env.COMPOSIO_API_KEY) {
-      activeComposio = new Composio({
-        apiKey: composioApiKey,
-        provider: new ClaudeAgentSDKProvider(),
-      });
+    
+    // If we have a request-level key, always use it
+    if (composioApiKey) {
+      console.log('[COMPOSIO] Using dynamic API key from request');
+      try {
+        activeComposio = new Composio({
+          apiKey: composioApiKey,
+          provider: new ClaudeAgentSDKProvider(),
+        });
+      } catch (keyError) {
+        console.error('[COMPOSIO] Invalid dynamic key provided:', keyError.message);
+        throw new Error('Invalid Composio API key provided in request');
+      }
+    }
+
+    if (!activeComposio) {
+      throw new Error('Composio API key is required. Please provide it in settings or .env file.');
     }
 
     // Get or create Composio session for this user
-    // Note: If we use a custom key, we don't cache as it might change frequently in settings
     let composioSession;
-    if (activeComposio !== composio) {
+    if (activeComposio !== composio || composioApiKey) {
       console.log('[COMPOSIO] Creating temporary session with custom key');
       composioSession = await activeComposio.create(userId);
     } else {
@@ -241,7 +265,7 @@ app.get('/api/health', (_req, res) => {
 const startServer = async () => {
   await initializeProviders();
   await initializeComposioSession();
-  
+
   const server = app.listen(PORT, () => {
     console.log(`\n✓ Backend server running on http://localhost:${PORT}`);
   });

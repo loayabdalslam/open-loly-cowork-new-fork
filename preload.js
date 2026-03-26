@@ -119,7 +119,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Composio methods
   launchComposioOnboarding: () => ipcRenderer.invoke('composio:launch-onboarding'),
-  // Composio methods
-  launchComposioOnboarding: () => ipcRenderer.invoke('composio:launch-onboarding'),
-  checkComposioConnection: () => ipcRenderer.invoke('composio:check-connection'),
 });

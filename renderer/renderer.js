@@ -46,7 +46,6 @@ const saveGeneralBtn = document.getElementById('saveGeneralBtn');
 const saveProvidersBtn = document.getElementById('saveApiKeysBtn');
 const themeCards = document.querySelectorAll('.theme-card');
 const statusIndicator = document.getElementById('statusIndicator');
-const statusText = document.getElementById('statusText');
 
 // State
 let isFirstMessage = true;
@@ -1018,6 +1017,7 @@ async function handleSendMessage(e) {
               if (toolId && pendingToolCalls.has(toolId)) {
                 const localId = pendingToolCalls.get(toolId);
                 updateToolCallStatus(localId, 'success');
+                updateInlineToolResult(localId, data.result || 'No result');
                 pendingToolCalls.delete(toolId);
               }
             }
@@ -1347,7 +1347,7 @@ function formatToolPreview(toolInput) {
 // Add inline tool call to message (maintains correct order in stream)
 function addInlineToolCall(contentDiv, toolName, toolInput, toolId) {
   const toolDiv = document.createElement('div');
-  toolDiv.className = 'inline-tool-call expanded'; // Show expanded by default
+  toolDiv.className = 'inline-tool-call'; // Collapsed by default
   toolDiv.dataset.toolId = toolId;
 
   const inputPreview = formatToolPreview(toolInput);
@@ -1390,6 +1390,12 @@ function addInlineToolCall(contentDiv, toolName, toolInput, toolId) {
 function updateInlineToolResult(toolId, result) {
   const toolDiv = document.querySelector(`.inline-tool-call[data-tool-id="${toolId}"]`);
   if (toolDiv) {
+    // Update icon from running to success
+    const icon = toolDiv.querySelector('.tool-call-icon');
+    if (icon) {
+      icon.className = 'tool-call-icon success';
+    }
+
     const outputSection = toolDiv.querySelector('.tool-output-section');
     const outputContent = toolDiv.querySelector('.tool-output-content');
     if (outputSection && outputContent) {
@@ -1398,7 +1404,8 @@ function updateInlineToolResult(toolId, result) {
       outputSection.style.display = 'block';
 
       // Check for Anchor Browser live URL in tool result
-      const browserInfo = extractBrowserUrl(resultStr);
+      const resultValue = typeof result === 'object' ? JSON.stringify(result) : String(result);
+      const browserInfo = extractBrowserUrl(resultValue);
       if (browserInfo) {
         // Find the parent content div and add browser embed
         const contentDiv = toolDiv.closest('.message-content');
@@ -1425,7 +1432,7 @@ function addToolCall(name, input, status = 'running') {
   emptyTools.style.display = 'none';
 
   const toolDiv = document.createElement('div');
-  toolDiv.className = 'tool-call-item expanded'; // Show expanded by default
+  toolDiv.className = 'tool-call-item'; // Collapsed by default
   toolDiv.dataset.toolId = id;
 
   toolDiv.innerHTML = `
@@ -1930,9 +1937,8 @@ function setupSettingsEventListeners() {
   const saveComposioBtn = document.getElementById('saveComposioBtn');
   saveComposioBtn.addEventListener('click', () => {
     const composioKey = document.getElementById('composioApiKeyInput').value.trim();
-    if (composioKey) localStorage.setItem('COMPOSIO_API_KEY', composioKey);
+    localStorage.setItem('COMPOSIO_API_KEY', composioKey);
     showNotification('Composio key saved!');
-    checkComposioStatus();
   });
 }
 
@@ -1981,24 +1987,6 @@ function loadSettings() {
   });
 }
 
-async function checkComposioStatus() {
-  statusIndicator.className = 'status-indicator checking';
-  statusText.textContent = 'Checking connection...';
-  
-  try {
-    const isConnected = await window.electronAPI.checkComposioConnection();
-    if (isConnected) {
-      statusIndicator.className = 'status-indicator connected';
-      statusText.textContent = 'Connected to Composio Cloud';
-    } else {
-      statusIndicator.className = 'status-indicator error';
-      statusText.textContent = 'Not connected';
-    }
-  } catch (err) {
-    statusIndicator.className = 'status-indicator error';
-    statusText.textContent = 'Connection error';
-  }
-}
 
 function showNotification(message) {
   // Simple notification if we had an element, otherwise alert

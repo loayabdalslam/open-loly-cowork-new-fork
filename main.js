@@ -81,12 +81,7 @@ app.on('activate', () => {
 });
 
 // IPC Handlers
-ipcMain.handle('composio-onboarding', async () => {
+ipcMain.handle('composio:launch-onboarding', async () => {
   shell.openExternal('https://app.composio.ai/');
   return { success: true };
-});
-
-ipcMain.handle('composio:check-connection', async () => {
-  // Check if COMPOSIO_API_KEY is present in process.env
-  return !!process.env.COMPOSIO_API_KEY;
 });

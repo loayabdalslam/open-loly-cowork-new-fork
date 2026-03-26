@@ -49,34 +49,28 @@ export class OpencodeProvider extends BaseProvider {
     while (Date.now() - startTime < timeoutMs) {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 1000);
+        const timeout = setTimeout(() => controller.abort(), 2000); // 2s timeout for poll
         
-        // Use a real fetch without a silent catch to detect connection errors
-        await fetch(url, { 
+        const response = await fetch(url, { 
           method: 'GET',
           signal: controller.signal 
         });
         
         clearTimeout(timeout);
-        console.log('[Opencode] Server responded successfully');
+        
+        // If we get any response (even 404/401), the server is up
+        console.log(`[Opencode] Server responded with status: ${response.status}`);
         return true;
       } catch (error) {
-        // If it's a 404, 401, etc. (from the response, not the catch), it's reachable
-        // But here we are in the catch, so it's a network error
         if (error.name === 'AbortError') {
-          console.log('[Opencode] Server connection timed out, but likely reachable...');
-          return true;
+          console.log('[Opencode] Server connection timed out during poll, retrying...');
+        } else {
+          console.log(`[Opencode] Server not ready yet (${error.message || error.code || 'unknown error'}), retrying...`);
         }
-        
-        if (error.code !== 'ECONNREFUSED') {
-          // Some other network error, but the port might be open
-          console.log('[Opencode] Server reachable but experienced error:', error.message);
-          return true;
-        }
-        // If ECONNREFUSED, continue polling
+        // Continue polling for any error (connection refused, reset, fetch failed, etc.)
       }
       // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     throw new Error(`Opencode server at ${url} failed to respond within ${timeoutMs}ms`);
   }
